@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>NMD AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+Sinhala:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #0f0f1a;
+    --card: #13131f;
+    --border: rgba(0,200,255,0.15);
+    --cyan: #00c8ff;
+    --cyan2: #00ffcc;
+    --glow: rgba(0,200,255,0.3);
+    --text: #e8f4ff;
+    --muted: rgba(232,244,255,0.5);
+    --danger: #ff4466;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', 'Noto Sans Sinhala', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes gridMove {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(40px); }
+  }
+
+  /* Setup screen */
+  #setup-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    gap: 20px;
+  }
+
+  #setup-screen.hidden { display: none; }
+
+  .setup-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    filter: drop-shadow(0 0 20px var(--glow));
+  }
+
+  .setup-sub {
+    color: var(--muted);
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: 'Noto Sans Sinhala', sans-serif;
+  }
+
+  .setup-desc {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.7;
+    max-width: 320px;
+    font-family: 'Noto Sans Sinhala', sans-serif;
+  }
+
+  .api-input-wrap {
+    width: 100%;
+    max-width: 360px;
+    position: relative;
+  }
+
+  .api-input-wrap label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .api-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: monospace;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .api-input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px var(--glow);
+  }
+
+  .api-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-family: 'Noto Sans Sinhala', sans-serif;
+  }
+
+  .api-hint a { color: var(--cyan); text-decoration: none; }
+
+  .btn-start {
+    width: 100%;
+    max-width: 360px;
+    background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    color: #000;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+
+  .btn-start:active { transform: scale(0.97); }
+
+  /* Main App */
+  #main-app { display: flex; flex-direction: column; height: 100vh; position: relative; z-index: 1; }
+  #main-app.hidden { display: none; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 8px var(--glow));
+  }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00ff88;
+    box-shadow: 0 0 8px #00ff88;
+    animation: pulse-dot 2s infinite;
+  }
+
+  .status-dot.listening {
+    background: var(--danger);
+    box-shadow: 0 0 8px var(--danger);
+    animation: pulse-dot 0.5s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .btn-settings {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-area::-webkit-scrollbar { width: 3px; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Welcome card */
+  .welcome-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .welcome-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0,200,255,0.05) 0%, transparent 60%);
+    animation: rotate 10s linear infinite;
+  }
+
+  @keyframes rotate { to { transform: rotate(360deg); } }
+
+  .orb {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 16px;
+    position: relative;
+  }
+
+  .orb-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--cyan2), var(--cyan), #0044ff);
+    box-shadow: 0 0 30px var(--glow), 0 0 60px rgba(0,200,255,0.2);
+    animation: orb-breathe 3s ease-in-out infinite;
+  }
+
+  @keyframes orb-breathe {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 30px var(--glow), 0 0 60px rgba(0,200,255,0.2); }
+    50% { transform: scale(1.08); box-shadow: 0 0 50px var(--glow), 0 0 100px rgba(0,200,255,0.3); }
+  }
+
+  .orb-inner.listening {
+    animation: orb-listen 0.4s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 35% 35%, #ff88aa, var(--danger), #880022);
+    box-shadow: 0 0 30px rgba(255,68,102,0.5), 0 0 60px rgba(255,68,102,0.3);
+  }
+
+  @keyframes orb-listen {
+    from { transform: scale(0.95); }
+    to { transform: scale(1.15); }
+  }
+
+  .orb-inner.processing {
+    animation: orb-spin 1s linear infinite;
+    background: radial-gradient(circle at 35% 35%, #ffcc00, #ff8800, #ff4400);
+  }
+
+  @keyframes orb-spin {
+    to { transform: rotate(360deg) scale(1.05); }
+  }
+
+  .welcome-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .welcome-text {
+    font-family: 'Noto Sans Sinhala', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .wake-word-badge {
+    display: inline-block;
+    margin-top: 12px;
+    background: rgba(0,200,255,0.1);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 12px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  /* Messages */
+  .msg {
+    display: flex;
+    gap: 10px;
+    animation: msg-in 0.3s ease-out;
+  }
+
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .msg.bot .msg-avatar {
+    background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+    color: #000;
+    letter-spacing: 1px;
+    font-size: 10px;
+  }
+
+  .msg.user .msg-avatar {
+    background: rgba(255,255,255,0.1);
+    color: var(--text);
+    font-size: 16px;
+  }
+
+  .msg-bubble {
+    max-width: 75%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-family: 'Noto Sans Sinhala', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .msg.bot .msg-bubble {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+    color: var(--text);
+  }
+
+  .msg.user .msg-bubble {
+    background: linear-gradient(135deg, rgba(0,200,255,0.2), rgba(0,255,204,0.15));
+    border: 1px solid rgba(0,200,255,0.3);
+    border-top-right-radius: 4px;
+    color: var(--text);
+  }
+
+  /* Processing indicator */
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: typing 1.2s infinite;
+  }
+
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* Bottom controls */
+  .bottom-bar {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    background: rgba(10,10,15,0.9);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .voice-status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Noto Sans Sinhala', sans-serif;
+    min-height: 18px;
+    letter-spacing: 1px;
+  }
+
+  .voice-status.active { color: var(--cyan); }
+  .voice-status.listening-active { color: var(--danger); }
+
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .text-input {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 12px 18px;
+    color: var(--text);
+    font-family: 'Noto Sans Sinhala', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .text-input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 2px var(--glow);
+  }
+
+  .text-input::placeholder { color: var(--muted); }
+
+  .btn-mic {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--cyan);
+    background: rgba(0,200,255,0.1);
+    color: var(--cyan);
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+
+  .btn-mic:active, .btn-mic.active {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: white;
+    box-shadow: 0 0 20px rgba(255,68,102,0.5);
+    transform: scale(1.1);
+  }
+
+  .btn-send {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+    color: #000;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+
+  .btn-send:active { transform: scale(0.92); }
+
+  /* Settings modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    animation: fade-in 0.2s;
+  }
+
+  .modal-overlay.hidden { display: none; }
+
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    width: 100%;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    animation: slide-up 0.3s ease-out;
+  }
+
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--cyan);
+    margin-bottom: 20px;
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .modal label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .modal .api-input { margin-bottom: 20px; }
+
+  .modal-btns {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-save {
+    flex: 1;
+    background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    color: #000;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+  }
+
+  .btn-cancel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  /* Scrollbar */
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+  /* Listening waves */
+  .wave-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 20px;
+  }
+
+  .wave-bar {
+    width: 3px;
+    background: var(--danger);
+    border-radius: 2px;
+    animation: wave 0.8s ease-in-out infinite;
+  }
+
+  .wave-bar:nth-child(1) { animation-delay: 0s; height: 6px; }
+  .wave-bar:nth-child(2) { animation-delay: 0.1s; height: 14px; }
+  .wave-bar:nth-child(3) { animation-delay: 0.2s; height: 20px; }
+  .wave-bar:nth-child(4) { animation-delay: 0.1s; height: 14px; }
+  .wave-bar:nth-child(5) { animation-delay: 0s; height: 6px; }
+
+  @keyframes wave {
+    0%, 100% { transform: scaleY(0.5); opacity: 0.5; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Setup Screen -->
+<div id="setup-screen">
+  <div class="setup-logo">NMD AI</div>
+  <div class="setup-sub">ශ්‍රී ලාංකික AI සහායකයා</div>
+  <div class="setup-desc">
+    ආරම්භ කිරීමට Gemini API key එකක් ඇතුළු කරන්න.<br>
+    "NMD" කියා කතා කර AI සක්‍රිය කරන්න.
+  </div>
+  <div class="api-input-wrap">
+    <label>Gemini API Key</label>
+    <input type="password" class="api-input" id="setup-api-key" placeholder="AIza...">
+    <div class="api-hint">
+      Free key එකක් ගන්න: <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
+    </div>
+  </div>
+  <button class="btn-start" onclick="startApp()">ආරම්භ කරන්න ▶</button>
+</div>
+
+<!-- Main App -->
+<div id="main-app" class="hidden">
+  <div class="header">
+    <div class="header-logo">NMD AI</div>
+    <div class="header-status">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">සූදානම්</span>
+    </div>
+    <button class="btn-settings" onclick="openSettings()">⚙️</button>
+  </div>
+
+  <div class="chat-area" id="chat-area">
+    <div class="welcome-card">
+      <div class="orb">
+        <div class="orb-inner" id="main-orb"></div>
+      </div>
+      <div class="welcome-title">NMD AI</div>
+      <div class="welcome-text">
+        ඔබේ ශ්‍රී ලාංකික AI සහායකයා සූදානම්.<br>
+        ඕනෑම දෙයක් අහන්න, ඕනෑම දෙයක් කරන්න.
+      </div>
+      <div class="wake-word-badge">💬 "NMD" කියා ආරම්භ කරන්න</div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="voice-status" id="voice-status">මයික් බොත්තම ඔබා "NMD" කියන්න</div>
+    <div class="controls-row">
+      <input type="text" class="text-input" id="text-input" placeholder="මෙහි ටයිප් කරන්න..." onkeydown="if(event.key==='Enter') sendText()">
+      <button class="btn-mic" id="mic-btn" onclick="toggleMic()">🎤</button>
+      <button class="btn-send" onclick="sendText()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay hidden" id="settings-modal" onclick="closeSettingsOutside(event)">
+  <div class="modal">
+    <div class="modal-title">⚙ සැකසුම්</div>
+    <label>Gemini API Key</label>
+    <input type="password" class="api-input" id="settings-api-key" placeholder="AIza...">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeSettings()">අවලංගු</button>
+      <button class="btn-save" onclick="saveSettings()">සුරකින්න</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let apiKey = '';
+let isListening = false;
+let recognition = null;
+let synth = window.speechSynthesis;
+let awaitingCommand = false;
+let conversationHistory = [];
+
+// ── Init ──────────────────────────────────────────────
+window.onload = () => {
+  const saved = localStorage.getItem('nmd_api_key');
+  if (saved) {
+    apiKey = saved;
+    document.getElementById('setup-screen').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+    initSpeechRecognition();
+  }
+};
+
+function startApp() {
+  const key = document.getElementById('setup-api-key').value.trim();
+  if (!key) { alert('API key එකක් ඇතුළු කරන්න!'); return; }
+  apiKey = key;
+  localStorage.setItem('nmd_api_key', key);
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('main-app').classList.remove('hidden');
+  initSpeechRecognition();
+  speak('NMD AI සූදානම්. NMD කියා ආරම්භ කරන්න.');
+}
+
+// ── Speech Recognition ────────────────────────────────
+function initSpeechRecognition() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    setVoiceStatus('Voice ලබා ගත නොහැක. Text use කරන්න.', false);
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'si-LK';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript.trim();
+    stopListening();
+    handleVoiceInput(transcript);
+  };
+
+  recognition.onerror = (e) => {
+    stopListening();
+    if (e.error !== 'no-speech') setVoiceStatus('Voice error: ' + e.error, false);
+  };
+
+  recognition.onend = () => { if (isListening) stopListening(); };
+}
+
+function toggleMic() {
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
+}
+
+function startListening() {
+  if (!recognition) { alert('Voice recognition ලබා ගත නොහැක.'); return; }
+  isListening = true;
+  recognition.lang = awaitingCommand ? 'si-LK' : 'si-LK';
+  recognition.start();
+  document.getElementById('mic-btn').classList.add('active');
+  document.getElementById('main-orb').classList.add('listening');
+  document.getElementById('status-dot').classList.add('listening');
+  setVoiceStatus('', true, true);
+  document.getElementById('status-text').textContent = 'අහනවා...';
+}
+
+function stopListening() {
+  isListening = false;
+  if (recognition) { try { recognition.stop(); } catch(e){} }
+  document.getElementById('mic-btn').classList.remove('active');
+  document.getElementById('main-orb').classList.remove('listening');
+  document.getElementById('status-dot').classList.remove('listening');
+  setVoiceStatus('මයික් බොත්තම ඔබා "NMD" කියන්න', false);
+  document.getElementById('status-text').textContent = 'සූදානම්';
+}
+
+function handleVoiceInput(text) {
+  const lower = text.toLowerCase().replace(/\s/g, '');
+
+  // Wake word detection
+  if (!awaitingCommand) {
+    if (lower.includes('nmd') || lower.includes('එන්එම්ඩී') || lower.includes('nmd')) {
+      awaitingCommand = true;
+      addMessage('bot', '');
+      const lastMsg = document.querySelectorAll('.msg.bot .msg-bubble');
+      const bubble = lastMsg[lastMsg.length - 1];
+      bubble.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+
+      setTimeout(() => {
+        bubble.innerHTML = 'ඔව්, කියන්න. මොකක්ද උවමනාව? 🎯';
+        speak('ඔව් කියන්න. මොකක්ද උවමනාව?');
+        setTimeout(() => {
+          awaitingCommand = true;
+          startListening();
+        }, 2000);
+      }, 500);
+      return;
+    }
+    addMessage('user', text);
+    addMessage('bot', '"NMD" කියා ආරම්භ කරන්න. 🔊');
+    return;
+  }
+
+  // Command received
+  awaitingCommand = false;
+  addMessage('user', '🎤 ' + text);
+  processCommand(text);
+}
+
+// ── Process Command ───────────────────────────────────
+async function processCommand(text) {
+  setOrb('processing');
+  setVoiceStatus('සිතනවා...', true);
+  document.getElementById('status-text').textContent = 'Processing...';
+
+  const typingId = addTypingIndicator();
+
+  try {
+    const response = await callGemini(text);
+    removeTypingIndicator(typingId);
+    setOrb('');
+    setVoiceStatus('මයික් බොත්තම ඔබා "NMD" කියන්න', false);
+    document.getElementById('status-text').textContent = 'සූදානම්';
+    addMessage('bot', response);
+    speak(response);
+  } catch(err) {
+    removeTypingIndicator(typingId);
+    setOrb('');
+    const errMsg = 'සමාවෙන්න, error එකක් ආවා. නැවත try කරන්න.';
+    addMessage('bot', errMsg);
+    speak(errMsg);
+    setVoiceStatus('Error. නැවත try කරන්න.', false);
+    document.getElementById('status-text').textContent = 'සූදානම්';
+  }
+}
+
+// ── Gemini API ────────────────────────────────────────
+async function callGemini(userMessage) {
+  conversationHistory.push({ role: 'user', parts: [{ text: userMessage }] });
+
+  const systemPrompt = `ඔබ NMD AI — ශ්‍රී ලාංකීය AI සහායකයෙකි. 
+නීතිරිති:
+1. සෑම විටම සිංහල භාෂාවෙන් පිළිතුරු දෙන්න
+2. කෙටි, පැහැදිලි, ප්‍රයෝජනවත් පිළිතුරු දෙන්න
+3. හිතකාමීව, ස්වාභාවිකව කතා කරන්න
+4. technical terms සිංහලට translate කරන්න
+5. ශ්‍රී ලාංකීය context දනී`;
+
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: conversationHistory,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+  };
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'API Error');
+  }
+
+  const data = await res.json();
+  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'පිළිතුරක් ලැබුණේ නැත.';
+
+  conversationHistory.push({ role: 'model', parts: [{ text: reply }] });
+  if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
+
+  return reply;
+}
+
+// ── Text Send ─────────────────────────────────────────
+async function sendText() {
+  const input = document.getElementById('text-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  addMessage('user', text);
+  setOrb('processing');
+  document.getElementById('status-text').textContent = 'Processing...';
+
+  const typingId = addTypingIndicator();
+  try {
+    const response = await callGemini(text);
+    removeTypingIndicator(typingId);
+    setOrb('');
+    document.getElementById('status-text').textContent = 'සූදානම්';
+    addMessage('bot', response);
+    speak(response);
+  } catch(err) {
+    removeTypingIndicator(typingId);
+    setOrb('');
+    document.getElementById('status-text').textContent = 'සූදානම්';
+    addMessage('bot', 'Error: API key check කරන්න. ⚙️');
+  }
+}
+
+// ── TTS ───────────────────────────────────────────────
+function speak(text) {
+  if (!synth) return;
+  synth.cancel();
+  const clean = text.replace(/[🎯🔊💬⚙️✅❌📱]/g, '');
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = 'si-LK';
+  utt.rate = 0.9;
+  utt.pitch = 1;
+
+  // Try Sinhala voice, fallback to any
+  const voices = synth.getVoices();
+  const siVoice = voices.find(v => v.lang.startsWith('si')) || voices.find(v => v.lang.startsWith('en'));
+  if (siVoice) utt.voice = siVoice;
+
+  synth.speak(utt);
+}
+
+// ── UI Helpers ────────────────────────────────────────
+function addMessage(role, text) {
+  const chat = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar">${role === 'bot' ? 'NMD' : '👤'}</div>
+    <div class="msg-bubble">${text}</div>
+  `;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function addTypingIndicator() {
+  const chat = document.getElementById('chat-area');
+  const id = 'typing-' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = id;
+  div.innerHTML = `
+    <div class="msg-avatar">NMD</div>
+    <div class="msg-bubble">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+  `;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return id;
+}
+
+function removeTypingIndicator(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function setOrb(state) {
+  const orb = document.getElementById('main-orb');
+  orb.className = 'orb-inner';
+  if (state) orb.classList.add(state);
+}
+
+function setVoiceStatus(text, active, listening) {
+  const el = document.getElementById('voice-status');
+  el.className = 'voice-status' + (active ? ' active' : '') + (listening ? ' listening-active' : '');
+  if (listening) {
+    el.innerHTML = '<div class="wave-container"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>';
+  } else {
+    el.textContent = text;
+  }
+}
+
+// ── Settings ──────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settings-api-key').value = apiKey;
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').classList.add('hidden');
+}
+
+function closeSettingsOutside(e) {
+  if (e.target === document.getElementById('settings-modal')) closeSettings();
+}
+
+function saveSettings() {
+  const key = document.getElementById('settings-api-key').value.trim();
+  if (!key) { alert('API key ඇතුළු කරන්න!'); return; }
+  apiKey = key;
+  localStorage.setItem('nmd_api_key', key);
+  closeSettings();
+  addMessage('bot', '✅ සැකසුම් සුරකිනු ලැබිණ!');
+}
+
+// Load voices on mobile
+if (synth) {
+  synth.onvoiceschanged = () => { synth.getVoices(); };
+}
+</script>
+</body>
+</html>
